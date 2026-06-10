@@ -5,7 +5,7 @@ import { createChatRouter } from "./routes/chat.js";
 import { errorHandler, notFound } from "./middleware/error-handler.js";
 import { requestId } from "./middleware/request-id.js";
 
-export function createApp({ config, mistralClient }) {
+export function createApp({ config, mistralClient, authVerifier }) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -35,7 +35,7 @@ export function createApp({ config, mistralClient }) {
     "/chat",
     createChatRouter({
       mistralClient,
-      apiKeys: config.chatApiKeys,
+      authVerifier,
       rateLimit: config.chatRateLimit,
       rateWindowMs: config.chatRateWindowMs,
       maxConcurrentChats: config.maxConcurrentChats,

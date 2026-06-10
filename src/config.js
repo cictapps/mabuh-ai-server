@@ -15,12 +15,6 @@ const parseTrustProxy = (value) => {
   return Number.isInteger(hops) && hops > 0 ? hops : false;
 };
 
-const parseList = (value) =>
-  (value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
 export function loadConfig(env = process.env) {
   return {
     nodeEnv: env.NODE_ENV ?? "development",
@@ -30,7 +24,7 @@ export function loadConfig(env = process.env) {
     mistralTimeoutMs: parseInteger(env.MISTRAL_TIMEOUT_MS, 15_000),
     corsOrigin: env.CORS_ORIGIN?.trim() || "*",
     trustProxy: parseTrustProxy(env.TRUST_PROXY),
-    chatApiKeys: parseList(env.CHAT_API_KEYS),
+    supabaseUrl: env.SUPABASE_URL?.trim().replace(/\/+$/, "") ?? "",
     chatRateLimit: parseInteger(env.CHAT_RATE_LIMIT, 10),
     chatRateWindowMs: parseInteger(env.CHAT_RATE_WINDOW_MS, 60_000),
     maxConcurrentChats: parseInteger(env.MAX_CONCURRENT_CHATS, 8),
@@ -43,14 +37,21 @@ export function loadConfig(env = process.env) {
 export function validateConfig(config) {
   const errors = [];
 
-  if (config.nodeEnv === "production" && config.chatApiKeys.length === 0) {
-    errors.push("CHAT_API_KEYS must contain at least one key in production");
+  let supabaseUrl;
+  try {
+    supabaseUrl = new URL(config.supabaseUrl);
+  } catch {
+    errors.push("SUPABASE_URL must be a valid URL");
+  }
+  if (supabaseUrl && supabaseUrl.origin !== config.supabaseUrl) {
+    errors.push("SUPABASE_URL must contain only the project origin");
   }
   if (
+    supabaseUrl &&
     config.nodeEnv === "production" &&
-    config.chatApiKeys.some((key) => key.length < 32)
+    supabaseUrl.protocol !== "https:"
   ) {
-    errors.push("every CHAT_API_KEYS value must be at least 32 characters");
+    errors.push("SUPABASE_URL must use HTTPS in production");
   }
   if (config.nodeEnv === "production" && config.corsOrigin === "*") {
     errors.push("CORS_ORIGIN must not be '*' in production");

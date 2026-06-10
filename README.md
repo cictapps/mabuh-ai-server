@@ -7,6 +7,7 @@ backed by Mistral.
 
 - Node.js 20 or newer
 - A Mistral API key
+- A Supabase project using asymmetric JWT signing keys
 
 ## Setup
 
@@ -16,18 +17,21 @@ cp .env.example .env
 npm run dev
 ```
 
-Set `MISTRAL_API_KEY` in `.env` before using the chat endpoint.
+Set `MISTRAL_API_KEY` and your Supabase project URL in `.env`:
+
+```env
+MISTRAL_API_KEY=your-mistral-key
+SUPABASE_URL=https://your-project-ref.supabase.co
+```
 
 For production, also set:
 
-- `CHAT_API_KEYS` to one or more comma-separated, high-entropy bearer tokens.
 - `CORS_ORIGIN` to the exact allowed web origin or comma-separated origins.
 - `TRUST_PROXY` to the number of trusted proxy hops, or `false` when directly
   exposed. Do not use `true` in production.
 
-Production startup fails when chat authentication is disabled or CORS allows
-every origin. Each production chat API key must contain at least 32 characters.
-For example, generate one with `openssl rand -hex 32`.
+Production startup fails when the Supabase URL is missing, CORS allows every
+origin, or proxy trust is unsafe.
 
 ## API
 
@@ -41,10 +45,10 @@ Returns `200` when the Mistral API key is configured, otherwise `503`.
 
 ### `POST /chat`
 
-When `CHAT_API_KEYS` is configured, send a key in the authorization header:
+Send the logged-in user's Supabase access token:
 
 ```http
-Authorization: Bearer your-chat-api-key
+Authorization: Bearer your-supabase-access-token
 ```
 
 ```json
@@ -68,14 +72,19 @@ requests such as factual questions, schoolwork, coding, and content generation.
 
 The server applies per-IP rate limiting, a global cap on simultaneous model
 calls, request-body and aggregate prompt-size limits, no-store response headers,
-restricted production CORS, API-key authentication, and conservative HTTP
+restricted production CORS, Supabase JWT authentication, and conservative HTTP
 timeouts. Tune these settings with the variables in `.env.example`.
 
 The built-in rate limiter and concurrency counter are per process. A
 multi-instance deployment should enforce shared limits and user identity at an
-API gateway or use a shared rate-limit store. A bearer key embedded in a public
-mobile or browser app can be extracted and is not a substitute for user
-authentication.
+API gateway or use a shared rate-limit store. Requests are limited by both
+client IP and the verified Supabase user ID.
+
+The server verifies JWTs with the project's public JWKS and accepts only
+asymmetric `ES256` or `RS256` signing keys. If the project still uses the legacy
+shared JWT secret (`HS256`), migrate it under Supabase Auth signing-key settings
+before deploying this server. Never place a Supabase secret or service-role key
+in the client app.
 
 ## Commands
 

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { CapacityError, ValidationError } from "../errors.js";
-import { createApiKeyAuth } from "../middleware/api-key.js";
+import { createSupabaseAuth } from "../middleware/supabase-auth.js";
 
 const SUPPORT_REPLY =
   "It sounds heavy. You don't have to carry this alone. Tap Support to reach a person who can listen.";
@@ -109,16 +109,29 @@ export function createChatHandler({
 
 export function createChatRouter({
   mistralClient,
-  apiKeys = [],
+  authVerifier,
   rateLimit: requestLimit = 10,
   rateWindowMs = 60_000,
   maxConcurrentChats = 8,
   requestLimits = DEFAULT_LIMITS,
 }) {
   const router = Router();
-  const limiter = rateLimit({
+  const ipLimiter = rateLimit({
     windowMs: rateWindowMs,
     limit: requestLimit,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+      error: {
+        code: "RATE_LIMITED",
+        message: "Too many chat requests. Please try again shortly.",
+      },
+    },
+  });
+  const userLimiter = rateLimit({
+    windowMs: rateWindowMs,
+    limit: requestLimit,
+    keyGenerator: (req) => req.auth.userId,
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: {
@@ -131,8 +144,9 @@ export function createChatRouter({
 
   router.post(
     "/",
-    limiter,
-    createApiKeyAuth(apiKeys),
+    ipLimiter,
+    createSupabaseAuth(authVerifier),
+    userLimiter,
     createChatHandler({
       mistralClient,
       requestLimits,

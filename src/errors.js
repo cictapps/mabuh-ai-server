@@ -15,8 +15,8 @@ export class ValidationError extends AppError {
 }
 
 export class AuthenticationError extends AppError {
-  constructor() {
-    super(401, "UNAUTHORIZED", "A valid API key is required");
+  constructor(message = "A valid Supabase user session is required") {
+    super(401, "UNAUTHORIZED", message);
     this.name = "AuthenticationError";
   }
 }

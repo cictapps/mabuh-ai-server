@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { createApp } from "./app.js";
 import { loadConfig, validateConfig } from "./config.js";
 import { createMistralClient } from "./services/mistral.js";
+import { createSupabaseAuthVerifier } from "./services/supabase-auth.js";
 
 const config = loadConfig();
 validateConfig(config);
@@ -11,7 +12,10 @@ const mistralClient = createMistralClient({
   model: config.mistralModel,
   timeoutMs: config.mistralTimeoutMs,
 });
-const app = createApp({ config, mistralClient });
+const authVerifier = createSupabaseAuthVerifier({
+  supabaseUrl: config.supabaseUrl,
+});
+const app = createApp({ config, mistralClient, authVerifier });
 const server = createServer(app);
 
 server.headersTimeout = 10_000;
