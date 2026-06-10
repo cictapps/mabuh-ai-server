@@ -63,8 +63,8 @@ Authorization: Bearer your-supabase-access-token
 
 `intent` selects how the model responds and must be one of:
 
-- `general` (default) — open emotional support and wellbeing, written in a
-  warm, comforting voice (a short paragraph).
+- `general` (default) — open emotional support and wellbeing for students,
+  written in a warm, comforting voice (a short paragraph).
 - `support` — skips the model and immediately returns the app's support
   message.
 - `vent` — pure listening: validate, name the feeling, sit with it, do not
@@ -72,7 +72,12 @@ Authorization: Bearer your-supabase-access-token
 - `affirmation` — a warm, present-tense daily affirmation written as a short
   paragraph that builds on itself.
 - `self_care` — one small, concrete self-care action for the next ten
-  minutes, framed gently and without pressure.
+  minutes, framed gently and without pressure for a student afternoon.
+
+Most users are students balancing classes, deadlines, family expectations, and
+the rest of life. Every intent is written with that in mind — supportive, not
+tutoring — and meets school-related feelings with the same warmth as any
+other.
 
 History accepts only `user` and `assistant` roles.
 

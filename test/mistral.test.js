@@ -164,6 +164,35 @@ describe("Mistral client", () => {
     });
   });
 
+  it("frames every intent for a student audience", async () => {
+    const capturedBodies = [];
+    const client = createMistralClient({
+      ...options,
+      async fetchImpl(_url, init) {
+        capturedBodies.push(JSON.parse(init.body));
+        return {
+          ok: true,
+          async json() {
+            return { choices: [{ message: { content: "Reply" } }] };
+          },
+        };
+      },
+    });
+
+    for (const intent of ["general", "vent", "affirmation", "self_care"]) {
+      await client.complete({ message: "Hello", history: [], intent });
+    }
+
+    capturedBodies.forEach((body, index) => {
+      const prompt = body.messages[0].content;
+      assert.match(
+        prompt,
+        /students?/i,
+        `prompt ${index} should reference students`,
+      );
+    });
+  });
+
   it("passes client cancellation to the upstream request", async () => {
     let receivedSignal;
     const controller = new AbortController();
