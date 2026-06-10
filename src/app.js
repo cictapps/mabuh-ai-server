@@ -31,7 +31,21 @@ export function createApp({ config, mistralClient }) {
       status: ready ? "ready" : "not_ready",
     });
   });
-  app.use("/chat", createChatRouter({ mistralClient }));
+  app.use(
+    "/chat",
+    createChatRouter({
+      mistralClient,
+      apiKeys: config.chatApiKeys,
+      rateLimit: config.chatRateLimit,
+      rateWindowMs: config.chatRateWindowMs,
+      maxConcurrentChats: config.maxConcurrentChats,
+      requestLimits: {
+        maxMessageLength: config.maxMessageLength,
+        maxHistoryItems: config.maxHistoryItems,
+        maxPromptCharacters: config.maxPromptCharacters,
+      },
+    }),
+  );
 
   app.use(notFound);
   app.use(errorHandler);

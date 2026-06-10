@@ -14,6 +14,20 @@ export class ValidationError extends AppError {
   }
 }
 
+export class AuthenticationError extends AppError {
+  constructor() {
+    super(401, "UNAUTHORIZED", "A valid API key is required");
+    this.name = "AuthenticationError";
+  }
+}
+
+export class CapacityError extends AppError {
+  constructor() {
+    super(503, "AT_CAPACITY", "The chat service is busy. Please try again shortly.");
+    this.name = "CapacityError";
+  }
+}
+
 export class UpstreamError extends AppError {
   constructor(message = "The AI service is temporarily unavailable", options) {
     super(502, "UPSTREAM_ERROR", message, options);

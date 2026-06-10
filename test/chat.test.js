@@ -4,11 +4,17 @@ import {
   createChatHandler,
   parseChatRequest,
 } from "../src/routes/chat.js";
+import { CapacityError } from "../src/errors.js";
 import { errorHandler } from "../src/middleware/error-handler.js";
 
 function createResponse() {
   return {
     body: undefined,
+    headers: {},
+    set(name, value) {
+      this.headers[name] = value;
+      return this;
+    },
     json(body) {
       this.body = body;
       return this;
@@ -46,6 +52,31 @@ describe("parseChatRequest", () => {
       /history\[0\] is invalid/,
     );
   });
+
+  it("rejects unsupported intents", () => {
+    assert.throws(
+      () => parseChatRequest({ message: "Hello", intent: "admin" }),
+      /intent must be general or support/,
+    );
+  });
+
+  it("limits the aggregate prompt size", () => {
+    assert.throws(
+      () =>
+        parseChatRequest(
+          {
+            message: "123456",
+            history: [{ role: "user", content: "12345" }],
+          },
+          {
+            maxMessageLength: 10,
+            maxHistoryItems: 2,
+            maxPromptCharacters: 10,
+          },
+        ),
+      /must total at most 10 characters/,
+    );
+  });
 });
 
 describe("chat handler", () => {
@@ -68,6 +99,7 @@ describe("chat handler", () => {
 
     assert.match(res.body.reply, /Tap Support/);
     assert.equal(called, false);
+    assert.equal(res.headers["Cache-Control"], "no-store");
   });
 
   it("passes normalized chat input to Mistral", async () => {
@@ -95,8 +127,35 @@ describe("chat handler", () => {
     assert.deepEqual(received, {
       message: "Hello",
       history: [{ role: "assistant", content: "Hi" }],
+      signal: received.signal,
     });
+    assert.ok(received.signal instanceof AbortSignal);
     assert.deepEqual(res.body, { reply: "Hello there" });
+  });
+
+  it("rejects model calls above the concurrency cap", async () => {
+    let releaseFirst;
+    const firstCall = new Promise((resolve) => {
+      releaseFirst = resolve;
+    });
+    const handler = createChatHandler({
+      maxConcurrentChats: 1,
+      mistralClient: {
+        async complete() {
+          await firstCall;
+          return "Done";
+        },
+      },
+    });
+
+    const pending = handler({ body: { message: "First" } }, createResponse());
+    await assert.rejects(
+      handler({ body: { message: "Second" } }, createResponse()),
+      CapacityError,
+    );
+
+    releaseFirst();
+    await pending;
   });
 });
 

@@ -80,4 +80,30 @@ describe("Mistral client", () => {
       UpstreamError,
     );
   });
+
+  it("passes client cancellation to the upstream request", async () => {
+    let receivedSignal;
+    const controller = new AbortController();
+    const client = createMistralClient({
+      ...options,
+      async fetchImpl(_url, init) {
+        receivedSignal = init.signal;
+        return {
+          ok: true,
+          async json() {
+            return { choices: [{ message: { content: "Reply" } }] };
+          },
+        };
+      },
+    });
+
+    await client.complete({
+      message: "Hello",
+      history: [],
+      signal: controller.signal,
+    });
+    controller.abort();
+
+    assert.equal(receivedSignal.aborted, true);
+  });
 });

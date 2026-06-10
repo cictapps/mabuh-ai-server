@@ -1,10 +1,11 @@
 import "dotenv/config";
 import { createServer } from "node:http";
 import { createApp } from "./app.js";
-import { loadConfig } from "./config.js";
+import { loadConfig, validateConfig } from "./config.js";
 import { createMistralClient } from "./services/mistral.js";
 
 const config = loadConfig();
+validateConfig(config);
 const mistralClient = createMistralClient({
   apiKey: config.mistralApiKey,
   model: config.mistralModel,
@@ -12,6 +13,12 @@ const mistralClient = createMistralClient({
 });
 const app = createApp({ config, mistralClient });
 const server = createServer(app);
+
+server.headersTimeout = 10_000;
+server.requestTimeout = 30_000;
+server.keepAliveTimeout = 5_000;
+server.maxHeadersCount = 50;
+server.maxRequestsPerSocket = 100;
 
 server.listen(config.port, () => {
   console.log(`Mabuh chat server listening on port ${config.port}`);

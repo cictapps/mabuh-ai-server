@@ -33,11 +33,15 @@ export function createMistralClient({
   fetchImpl = globalThis.fetch,
 }) {
   return {
-    async complete({ message, history }) {
+    async complete({ message, history, signal }) {
       if (!apiKey) {
         throw new UpstreamError("The AI service is not configured");
       }
 
+      const timeoutSignal = AbortSignal.timeout(timeoutMs);
+      const requestSignal = signal
+        ? AbortSignal.any([timeoutSignal, signal])
+        : timeoutSignal;
       let response;
       try {
         response = await fetchImpl(
@@ -58,7 +62,7 @@ export function createMistralClient({
                 { role: "user", content: message },
               ],
             }),
-            signal: AbortSignal.timeout(timeoutMs),
+            signal: requestSignal,
           },
         );
       } catch (error) {
