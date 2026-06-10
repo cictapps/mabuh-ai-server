@@ -43,6 +43,10 @@ Returns `200` when the Mistral API key is configured, otherwise `503`.
 `intent: "support"` skips the model and immediately returns the app's support
 message. History accepts only `user` and `assistant` roles.
 
+The AI is restricted to emotional support, discussion of feelings, coping with
+personal difficulties, and general mental wellbeing. It refuses unrelated
+requests such as factual questions, schoolwork, coding, and content generation.
+
 ## Commands
 
 ```bash
