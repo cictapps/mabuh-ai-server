@@ -56,8 +56,15 @@ describe("parseChatRequest", () => {
   it("rejects unsupported intents", () => {
     assert.throws(
       () => parseChatRequest({ message: "Hello", intent: "admin" }),
-      /intent must be general or support/,
+      /intent must be one of: general, support, vent, affirmation, self_care/,
     );
+  });
+
+  it("accepts the vent, affirmation, and self_care intents", () => {
+    for (const intent of ["vent", "affirmation", "self_care"]) {
+      const parsed = parseChatRequest({ message: "Hi", intent });
+      assert.equal(parsed.intent, intent);
+    }
   });
 
   it("limits the aggregate prompt size", () => {
@@ -127,6 +134,7 @@ describe("chat handler", () => {
     assert.deepEqual(received, {
       message: "Hello",
       history: [{ role: "assistant", content: "Hi" }],
+      intent: "general",
       signal: received.signal,
     });
     assert.ok(received.signal instanceof AbortSignal);

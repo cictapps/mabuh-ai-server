@@ -61,8 +61,20 @@ Authorization: Bearer your-supabase-access-token
 }
 ```
 
-`intent: "support"` skips the model and immediately returns the app's support
-message. History accepts only `user` and `assistant` roles.
+`intent` selects how the model responds and must be one of:
+
+- `general` (default) — open emotional support and wellbeing, written in a
+  warm, comforting voice (a short paragraph).
+- `support` — skips the model and immediately returns the app's support
+  message.
+- `vent` — pure listening: validate, name the feeling, sit with it, do not
+  problem-solve.
+- `affirmation` — a warm, present-tense daily affirmation written as a short
+  paragraph that builds on itself.
+- `self_care` — one small, concrete self-care action for the next ten
+  minutes, framed gently and without pressure.
+
+History accepts only `user` and `assistant` roles.
 
 The AI is restricted to emotional support, discussion of feelings, coping with
 personal difficulties, and general mental wellbeing. It refuses unrelated

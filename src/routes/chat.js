@@ -6,6 +6,7 @@ import { createSupabaseAuth } from "../middleware/supabase-auth.js";
 const SUPPORT_REPLY =
   "It sounds heavy. You don't have to carry this alone. Tap Support to reach a person who can listen.";
 const ALLOWED_ROLES = new Set(["user", "assistant"]);
+const ALLOWED_INTENTS = ["general", "support", "vent", "affirmation", "self_care"];
 const DEFAULT_LIMITS = {
   maxMessageLength: 2_000,
   maxHistoryItems: 12,
@@ -28,8 +29,10 @@ export function parseChatRequest(body, limits = DEFAULT_LIMITS) {
     throw new ValidationError("intent must be a string");
   }
   const normalizedIntent = intent.trim().toLowerCase();
-  if (!["general", "support"].includes(normalizedIntent)) {
-    throw new ValidationError("intent must be general or support");
+  if (!ALLOWED_INTENTS.includes(normalizedIntent)) {
+    throw new ValidationError(
+      `intent must be one of: ${ALLOWED_INTENTS.join(", ")}`,
+    );
   }
   if (!Array.isArray(history) || history.length > maxHistoryItems) {
     throw new ValidationError(
@@ -97,6 +100,7 @@ export function createChatHandler({
       const reply = await mistralClient.complete({
         message,
         history,
+        intent,
         signal: controller.signal,
       });
       return res.json({ reply });
